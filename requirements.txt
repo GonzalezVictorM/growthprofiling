@@ -1,0 +1,11 @@
+# Core image processing
+pillow
+pillow-heif
+opencv-python
+numpy
+
+# OCR
+pytesseract
+
+# Optional
+pandas

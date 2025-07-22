@@ -29,17 +29,20 @@ def process_image(image_path):
     top_text = run_ocr(top_crop)
     bottom_text = run_ocr(bottom_crop)
 
-    # Step 6: Create new filename
-    new_filename = create_filename(top_text, bottom_text)
-    new_path = os.path.join(RENAMED_DIR, new_filename)
+    print(f"Top text: {top_text}")
+    print(f"Bottom text: {bottom_text}")
 
-    # Step 7: Save renamed image
-    ensure_output_dir(RENAMED_DIR)
-    try:
-        os.rename(converted_path, new_path)
-        print(f"[OK] Renamed to: {new_filename}")
-    except Exception as e:
-        print(f"[ERROR] Could not rename file: {e}")
+    # # Step 6: Create new filename
+    # new_filename = create_filename(top_text, bottom_text)
+    # new_path = os.path.join(RENAMED_DIR, new_filename)
+
+    # # Step 7: Save renamed image
+    # ensure_output_dir(RENAMED_DIR)
+    # try:
+    #     os.rename(converted_path, new_path)
+    #     print(f"[OK] Renamed to: {new_filename}")
+    # except Exception as e:
+    #     print(f"[ERROR] Could not rename file: {e}")
 
 
 def batch_process():
