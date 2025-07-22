@@ -4,14 +4,14 @@ from PIL import Image
 import pillow_heif
 import cv2
 import numpy as np
-from config import SUPPORTED_FORMATS, DEFAULT_OUTPUT_EXT, CROP_PERCENTAGE
+from config import DEFAULT_OUTPUT_EXT, CROP_PERCENTAGE
 
 
 def ensure_output_dir(path):
     os.makedirs(path, exist_ok=True)
 
 
-def convert_to_tiff(input_path, output_dir, output_ext='tiff'):
+def convert_to_tiff(input_path, output_dir, output_ext = DEFAULT_OUTPUT_EXT):
     """
     Converts an image to TIFF format. Handles HEIC and general formats.
     """
@@ -68,3 +68,36 @@ def preprocess_for_ocr(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     return thresh
+
+def detect_plate_circle(image, config):
+    """
+    Detects the largest circular contour (e.g., petri dish) using HoughCircles.
+    Returns: (x, y, r) or None
+    """
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (9, 9), 2)
+    circles = cv2.HoughCircles(
+        blurred, cv2.HOUGH_GRADIENT,
+        dp = config['dp'],
+        minDist = config['minDist'],
+        param1 = config['param1'],
+        param2 = config['param2'],
+        minRadius = config['minRadius'],
+        maxRadius = config['maxRadius']
+    )
+    
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+        return circles[0][0]  # x, y, radius of first detected circle
+
+    return None
+
+def crop_plate(image, circle):
+    """
+    Crops a circular region from the image.
+    Returns cropped square image (bounding box around the circle).
+    """
+    x, y, r = circle
+    x1, y1 = max(x - r, 0), max(y - r, 0)
+    x2, y2 = min(x + r, image.shape[1]), min(y + r, image.shape[0])
+    return image[y1:y2, x1:x2]

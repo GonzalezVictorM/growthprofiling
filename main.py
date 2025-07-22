@@ -1,11 +1,14 @@
 import os
 import cv2
-from config import RAW_DIR, CONVERTED_DIR, RENAMED_DIR
-from utils.image_utils import convert_to_tiff, preprocess_for_ocr, crop_top_bottom, ensure_output_dir
+import pandas as pd
+from config import SUPPORTED_FORMATS, BASE_DIR, RAW_DIR, CONVERTED_DIR, RENAMED_DIR, CROPPED_DIR, CIRCLE_DETECTION_CONFIG
+from utils.image_utils import convert_to_tiff, preprocess_for_ocr, crop_top_bottom, ensure_output_dir, detect_plate_circle, crop_plate
 from utils.ocr_utils import run_ocr, create_filename
 
-def process_image(image_path):
-    print(f"Processing: {os.path.basename(image_path)}")
+def process_image(image_path, rename_map = None):
+    original_name = os.path.basename(image_path)
+    file_stem, _ = os.path.splitext(original_name)
+    print(f"Processing: {original_name}")
 
     # Step 1: Convert to TIFF
     converted_path = convert_to_tiff(image_path, CONVERTED_DIR)
@@ -13,51 +16,91 @@ def process_image(image_path):
         print(f"[ERROR] Conversion failed. Skipping.")
         return
 
-    # Step 2: Load with OpenCV
-    image = cv2.imread(converted_path)
-    if image is None:
-        print(f"[ERROR] Failed to load converted image. Skipping.")
+    # Step 2: Try to rename from CSV
+    new_filename = None
+    if rename_map:
+        match = rename_map.get(file_stem.lower())
+        if match:
+            new_filename = f"{match}.tiff"
+            print(f"[INFO] Using CSV rename: {new_filename}")
+
+    # Step 3: OCR fallback
+    if not new_filename:
+        print("[INFO] No rename match. Falling back to OCR...")
+        image = cv2.imread(converted_path)
+        if image is None:
+            print(f"[ERROR] Failed to load converted image. Skipping.")
+            return
+    
+        thresh = preprocess_for_ocr(image)
+        top_crop, bottom_crop = crop_top_bottom(thresh)
+        top_text = run_ocr(top_crop)
+        bottom_text = run_ocr(bottom_crop)
+        new_filename = create_filename(top_text, bottom_text)
+        print(f"[INFO] Using OCR rename: {new_filename}")
+    
+    # Step 4: Rename the file
+    new_path = os.path.join(RENAMED_DIR, new_filename)
+    ensure_output_dir(RENAMED_DIR)
+    try:
+        os.rename(converted_path, new_path)
+        print(f"[OK] Renamed to: {new_filename}")
+    except Exception as e:
+        print(f"[ERROR] Could not rename file: {e}")
         return
 
-    # Step 3: Preprocess for OCR
-    thresh = preprocess_for_ocr(image)
+    # Step 4: Circle Detection and Crop
+    print("[INFO] Starting circle detection...")
+    image = cv2.imread(new_path)
+    if image is None:
+        print("[ERROR] Could not load image for cropping.")
+        return
 
-    # Step 4: Crop label regions
-    top_crop, bottom_crop = crop_top_bottom(thresh)
+    circle = detect_plate_circle(image, CIRCLE_DETECTION_CONFIG)
+    if circle is None:
+        print("[WARN] No circular plate detected.")
+        return
 
-    # Step 5: Run OCR
-    top_text = run_ocr(top_crop)
-    bottom_text = run_ocr(bottom_crop)
-
-    print(f"Top text: {top_text}")
-    print(f"Bottom text: {bottom_text}")
-
-    # # Step 6: Create new filename
-    # new_filename = create_filename(top_text, bottom_text)
-    # new_path = os.path.join(RENAMED_DIR, new_filename)
-
-    # # Step 7: Save renamed image
-    # ensure_output_dir(RENAMED_DIR)
-    # try:
-    #     os.rename(converted_path, new_path)
-    #     print(f"[OK] Renamed to: {new_filename}")
-    # except Exception as e:
-    #     print(f"[ERROR] Could not rename file: {e}")
+    cropped = crop_plate(image, circle)
+    ensure_output_dir(CROPPED_DIR)
+    cropped_path = os.path.join(CROPPED_DIR, new_filename)
+    cv2.imwrite(cropped_path, cropped)
+    print(f"[OK] Cropped circular region saved: {os.path.basename(cropped_path)}")
 
 
-def batch_process():
+def batch_process(rename_csv = None):
     print("Starting batch processing...")
+
     if not os.path.exists(RAW_DIR):
         print(f"[ERROR] Input folder '{RAW_DIR}' does not exist.")
         return
+    
+    rename_map = {}
+    if rename_csv:
+        rename_csv_path = os.path.join(BASE_DIR, rename_csv)
+        if os.path.isfile(rename_csv_path):
+            df = pd.read_csv(rename_csv_path)
+            if {'old_name', 'new_name'}.issubset(df.columns):
+                rename_map = {
+                    str(row['old_name']).lower(): str(row['new_name'])
+                    for _, row in df.iterrows()
+                }
+                print(f"[OK] Loaded rename matrix with {len(rename_map)} entries.")
+            else:
+                print(f"[WARN] CSV missing required columns. Will fallback to OCR.")
+        else:
+            print(f"[WARN] Rename CSV not found. Will fallback to OCR.")
+    else:
+        print("[INFO] No rename CSV provided. Using OCR for all files.")
 
     for file_name in os.listdir(RAW_DIR):
-        if not file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.heic')):
+        if not file_name.lower().endswith(SUPPORTED_FORMATS):
+            print(f"[WARN] Unsupported file extension: {file_name}")
             continue
         file_path = os.path.join(RAW_DIR, file_name)
         if os.path.isfile(file_path):
-            process_image(file_path)
+            process_image(file_path, rename_map)
 
 
 if __name__ == "__main__":
-    batch_process()
+    batch_process(rename_csv = "rename_matrix.csv")
