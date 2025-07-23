@@ -88,7 +88,7 @@ def detect_plate_circle(image, config):
     
     if circles is not None:
         circles = np.uint16(np.around(circles))
-        return circles[0][0]  # x, y, radius of first detected circle
+        return tuple(int(v) for v in circles[0][0])  # x, y, radius of first detected circle
 
     return None
 

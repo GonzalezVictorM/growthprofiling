@@ -1,7 +1,7 @@
 import os
 import cv2
 import pandas as pd
-from config import SUPPORTED_FORMATS, BASE_DIR, RAW_DIR, CONVERTED_DIR, RENAMED_DIR, CROPPED_DIR, CIRCLE_DETECTION_CONFIG
+from config import SUPPORTED_FORMATS, DEFAULT_OUTPUT_EXT, DATA_DIR, RAW_DIR, CONVERTED_DIR, RENAMED_DIR, CROPPED_DIR, CIRCLE_DETECTION_CONFIG
 from utils.image_utils import convert_to_tiff, preprocess_for_ocr, crop_top_bottom, ensure_output_dir, detect_plate_circle, crop_plate
 from utils.ocr_utils import run_ocr, create_filename
 
@@ -11,10 +11,16 @@ def process_image(image_path, rename_map = None):
     print(f"Processing: {original_name}")
 
     # Step 1: Convert to TIFF
-    converted_path = convert_to_tiff(image_path, CONVERTED_DIR)
-    if not converted_path:
-        print(f"[ERROR] Conversion failed. Skipping.")
-        return
+    output_file = file_stem + '.' + DEFAULT_OUTPUT_EXT
+    output_path = os.path.join(CONVERTED_DIR, output_file)
+
+    if not os.path.exists(output_path):
+        converted_path = convert_to_tiff(image_path, CONVERTED_DIR)
+        if not converted_path:
+            print(f"[ERROR] Conversion failed. Skipping.")
+            return
+    else:
+        print(f"[SKIP] Already exists: {output_path}")
 
     # Step 2: Try to rename from CSV
     new_filename = None
@@ -42,30 +48,38 @@ def process_image(image_path, rename_map = None):
     # Step 4: Rename the file
     new_path = os.path.join(RENAMED_DIR, new_filename)
     ensure_output_dir(RENAMED_DIR)
-    try:
-        os.rename(converted_path, new_path)
-        print(f"[OK] Renamed to: {new_filename}")
-    except Exception as e:
-        print(f"[ERROR] Could not rename file: {e}")
-        return
+
+    if not os.path.exists(new_path):
+        try:
+            os.rename(converted_path, new_path)
+            print(f"[OK] Renamed to: {new_filename}")
+        except Exception as e:
+            print(f"[ERROR] Could not rename file: {e}")
+            return
+    else:
+        print(f"[SKIP] Already exists: {new_path}")
 
     # Step 4: Circle Detection and Crop
-    print("[INFO] Starting circle detection...")
-    image = cv2.imread(new_path)
-    if image is None:
-        print("[ERROR] Could not load image for cropping.")
-        return
-
-    circle = detect_plate_circle(image, CIRCLE_DETECTION_CONFIG)
-    if circle is None:
-        print("[WARN] No circular plate detected.")
-        return
-
-    cropped = crop_plate(image, circle)
-    ensure_output_dir(CROPPED_DIR)
     cropped_path = os.path.join(CROPPED_DIR, new_filename)
-    cv2.imwrite(cropped_path, cropped)
-    print(f"[OK] Cropped circular region saved: {os.path.basename(cropped_path)}")
+
+    if not os.path.exists(cropped_path):
+        print("[INFO] Starting circle detection...")
+        image = cv2.imread(new_path)
+        if image is None:
+            print("[ERROR] Could not load image for cropping.")
+            return
+
+        circle = detect_plate_circle(image, CIRCLE_DETECTION_CONFIG)
+        if circle is None:
+            print("[WARN] No circular plate detected.")
+            return
+
+        cropped = crop_plate(image, circle)
+        ensure_output_dir(CROPPED_DIR)
+        cv2.imwrite(cropped_path, cropped)
+        print(f"[OK] Cropped circular region saved: {os.path.basename(cropped_path)}")
+    else:
+        print(f"[SKIP] Already exists: {cropped_path}")
 
 
 def batch_process(rename_csv = None):
@@ -77,7 +91,7 @@ def batch_process(rename_csv = None):
     
     rename_map = {}
     if rename_csv:
-        rename_csv_path = os.path.join(BASE_DIR, rename_csv)
+        rename_csv_path = os.path.join(DATA_DIR, rename_csv)
         if os.path.isfile(rename_csv_path):
             df = pd.read_csv(rename_csv_path)
             if {'old_name', 'new_name'}.issubset(df.columns):
