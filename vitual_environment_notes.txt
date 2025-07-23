@@ -1,6 +1,0 @@
-# Create a python virtual environment
-python -m venv .venv
-
-# Activate/deactivate the venv (bash)
-source .venv/Scripts/activate
-deactivate
