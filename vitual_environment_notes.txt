@@ -1,0 +1,18 @@
+# Create a python virtual environment
+python -m venv .venv
+
+# Activate/deactivate the venv (bash)
+source .venv/Scripts/activate
+deactivate
+
+# From anaconda it is a bit different. first open a anaconda prompt station and run
+conda create -n growthprofiling-env python
+
+# You can add the version of python if required (e.g. python=3.9)
+
+# Activate the environment with 
+conda activate growthprofiling-env
+
+# Then go to the project folder and install all the dependencies with
+cd C:\Users\vimag\projects\growthprofiling
+pip install -r requirements.txt
