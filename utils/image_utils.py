@@ -9,7 +9,7 @@ from config import DEFAULT_OUTPUT_EXT, CROP_PERCENTAGE
 
 def ensure_output_dir(path):
     os.makedirs(path, exist_ok=True)
-
+    
 
 def convert_to_tiff(input_path, output_dir, output_ext = DEFAULT_OUTPUT_EXT):
     """
