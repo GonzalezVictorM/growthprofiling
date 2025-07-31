@@ -2,7 +2,7 @@ import os
 import cv2
 import pandas as pd
 from config import SUPPORTED_FORMATS, DEFAULT_OUTPUT_EXT, DATA_DIR, RAW_DIR, CONVERTED_DIR, RENAMED_DIR, CROPPED_DIR, CIRCLE_DETECTION_CONFIG
-from utils.image_utils import convert_to_tiff, preprocess_for_ocr, crop_top_bottom, ensure_output_dir, detect_plate_circle, crop_plate
+from utils.image_utils import convert_to_tiff, preprocess_for_ocr, crop_top_bottom, ensure_output_dir, detect_plate_circle, crop_plate, mask_to_circle
 from utils.ocr_utils import run_ocr, create_filename
 
 def process_image(image_path, rename_map = None):
@@ -59,7 +59,7 @@ def process_image(image_path, rename_map = None):
     else:
         print(f"[SKIP] Already exists: {new_path}")
 
-    # Step 4: Circle Detection and Crop
+    # Step 4: Circle Detection, Crop and Mask
     cropped_path = os.path.join(CROPPED_DIR, new_filename)
 
     if not os.path.exists(cropped_path):
@@ -75,8 +75,9 @@ def process_image(image_path, rename_map = None):
             return
 
         cropped = crop_plate(image, circle)
+        masked = mask_to_circle(cropped)
         ensure_output_dir(CROPPED_DIR)
-        cv2.imwrite(cropped_path, cropped)
+        cv2.imwrite(cropped_path, masked)
         print(f"[OK] Cropped circular region saved: {os.path.basename(cropped_path)}")
     else:
         print(f"[SKIP] Already exists: {cropped_path}")

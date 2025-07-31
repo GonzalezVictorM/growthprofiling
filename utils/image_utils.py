@@ -101,3 +101,19 @@ def crop_plate(image, circle):
     x1, y1 = max(x - r, 0), max(y - r, 0)
     x2, y2 = min(x + r, image.shape[1]), min(y + r, image.shape[0])
     return image[y1:y2, x1:x2]
+
+def mask_to_circle(image):
+    """
+    Masks the input image so only the inscribed circle is visible.
+    Corners are set to black.
+    """
+    h, w = image.shape[:2]
+    center = (w // 2, h // 2)
+    radius = min(center[0], center[1], w - center[0], h - center[1])
+    mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.circle(mask, center, radius, 255, -1)
+    if image.ndim == 3 and image.shape[2] == 3:
+        masked = cv2.bitwise_and(image, image, mask=mask)
+    else:
+        masked = cv2.bitwise_and(image, image, mask=mask)
+    return masked
