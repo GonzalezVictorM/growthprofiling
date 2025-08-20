@@ -24,6 +24,7 @@ When a `rename_matrix.csv` is provided, images are renamed based on the specifie
     git clone https://github.com/GonzalezVictorM/growthprofiling.git
     cd growthprofiling
     ```
+    
 2.  **(Optional/recommended) Build a conda environment**:
 
     ```bash
