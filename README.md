@@ -56,26 +56,25 @@ When a `rename_matrix.csv` is provided, images are renamed based on the specifie
     ```bash
     python process_pictures.py
     ```
+    The script will process the images and save the output in the following directories:
+    
+    * `local_data/converted_pictures/`: Intermediate .tiff files.
+    * `local_data/renamed_pictures/`: The images after being renamed.
+    * `local_data/cropped_pictures/`: The final, cropped images ready for publication.
+    
+    The script will skip parts of the process for which the output is ready, making it possible to run the command without re-doing all the work.
 
-The script will process the images and save the output in the following directories:
-
-* `local_data/converted_pictures/`: Intermediate .tiff files.
-* `local_data/renamed_pictures/`: The images after being renamed.
-* `local_data/cropped_pictures/`: The final, cropped images ready for publication.
-
-The script will skip parts of the process for which the output is ready, making it possible to run the command without re-doing all the work.
-
-6.  **Run the figure making tool**:
+7.  **Run the figure making tool**:
 
     ```bash
     python generate_figure.py
     ```
-
-You will be prompted to select:
-* Axis orientation (strains on vertical or horizontal axis)
-* Which strains, substrates, and timepoints to include
-
-The script will create a grid PDF with your selections, with no space between images and clear axis labels.
+    You will be prompted to select:
+    
+    * Axis orientation (strains on vertical or horizontal axis)
+    * Which strains, substrates, and timepoints to include
+    
+    The script will create a grid PDF with your selections, with no space between images and clear axis labels.
 
 ***
 
