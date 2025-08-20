@@ -1,9 +1,10 @@
 import os
 import cv2
 import pandas as pd
-from config import SUPPORTED_FORMATS, DEFAULT_OUTPUT_EXT, DATA_DIR, RAW_DIR, CONVERTED_DIR, RENAMED_DIR, CROPPED_DIR, CIRCLE_DETECTION_CONFIG
+from config import SUPPORTED_FORMATS, DEFAULT_OUTPUT_EXT, DATA_DIR, RAW_DIR, CONVERTED_DIR, RENAMED_DIR, CROPPED_DIR, CIRCLE_DETECTION_CONFIG, THREADS
 from utils.image_utils import convert_to_tiff, preprocess_for_ocr, crop_top_bottom, ensure_output_dir, detect_plate_circle, crop_plate, mask_to_circle
 from utils.ocr_utils import run_ocr, create_filename
+from concurrent.futures import ThreadPoolExecutor
 
 def process_image(image_path, rename_map = None):
     original_name = os.path.basename(image_path)
@@ -83,13 +84,14 @@ def process_image(image_path, rename_map = None):
         print(f"[SKIP] Already exists: {cropped_path}")
 
 
-def batch_process(rename_csv = None):
+def batch_process(rename_csv = None, max_workers = THREADS):
     print("Starting batch processing...")
 
     if not os.path.exists(RAW_DIR):
         print(f"[ERROR] Input folder '{RAW_DIR}' does not exist.")
         return
     
+    # Load rename map if CSV provided
     rename_map = {}
     if rename_csv:
         rename_csv_path = os.path.join(DATA_DIR, rename_csv)
@@ -108,13 +110,24 @@ def batch_process(rename_csv = None):
     else:
         print("[INFO] No rename CSV provided. Using OCR for all files.")
 
-    for file_name in os.listdir(RAW_DIR):
-        if not file_name.lower().endswith(SUPPORTED_FORMATS):
-            print(f"[WARN] Unsupported file extension: {file_name}")
-            continue
-        file_path = os.path.join(RAW_DIR, file_name)
-        if os.path.isfile(file_path):
-            process_image(file_path, rename_map)
+    # Gather all valid image files
+    file_paths = [
+        os.path.join(RAW_DIR, fname)
+        for fname in os.listdir(RAW_DIR)
+        if os.path.isfile(os.path.join(RAW_DIR, fname)) and fname.lower().endswith(SUPPORTED_FORMATS)
+    ]
+    print(f"[INFO] Found {len(file_paths)} supported image files.")
+
+    # Process images in parallel
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(process_image, fp, rename_map) for fp in file_paths]
+        for i, future in enumerate(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"[ERROR] Exception in file {file_paths[i]}: {e}")
+
+    print("[DONE] Batch processing complete.")
 
 
 if __name__ == "__main__":

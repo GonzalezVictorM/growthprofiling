@@ -11,6 +11,8 @@ When a `rename_matrix.csv` is provided, images are renamed based on the specifie
 * **Batch conversion**: Converts various image formats to `.tiff`.
 * **Renaming**: Renames images using a provided `rename_matrix.csv` or through OCR.
 * **Automated cropping**: Crops the petri dish from the image for figure preparation.
+* **Multithreaded processing**: Automatically uses all available CPU cores for fast batch processing. You can override the number of threads in `config.py`.
+* **Publishable figure creation**: Easily generate grid figures from cropped images, with customizable axis labels and layout, ready for publication.
 
 ***
 
@@ -49,10 +51,10 @@ When a `rename_matrix.csv` is provided, images are renamed based on the specifie
 
     If you want to rename your images using a predefined list, create or edit the `local_data/rename_matrix.csv` file. The file needs to include a column `old_name` with the file names without the extension (e.g. `IMG_4469.HEIC` → `IMG_4469`) and a column `new_name` (e.g. `strainA_substrateB_ndays`) The tool will use this file to rename images, ignoring the OCR step.
 
-4.  **Run the tool**:
+6.  **Run the picture processing tool**:
 
     ```bash
-    python main.py
+    python process_pictures.py
     ```
 
 The script will process the images and save the output in the following directories:
@@ -60,6 +62,20 @@ The script will process the images and save the output in the following director
 * `local_data/converted_pictures/`: Intermediate .tiff files.
 * `local_data/renamed_pictures/`: The images after being renamed.
 * `local_data/cropped_pictures/`: The final, cropped images ready for publication.
+
+The script will skip parts of the process for which the output is ready, making it possible to run the command without re-doing all the work.
+
+6.  **Run the figure making tool**:
+
+    ```bash
+    python generate_figure.py
+    ```
+
+You will be prompted to select:
+* Axis orientation (strains on vertical or horizontal axis)
+* Which strains, substrates, and timepoints to include
+
+The script will create a grid PDF with your selections, with no space between images and clear axis labels.
 
 ***
 

@@ -75,9 +75,11 @@ def detect_plate_circle(image, config):
     Returns: (x, y, r) or None
     """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.equalizeHist(gray)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
+    edges = cv2.Canny(blurred, 50, 150)
     circles = cv2.HoughCircles(
-        blurred, cv2.HOUGH_GRADIENT,
+        edges, cv2.HOUGH_GRADIENT,
         dp = config['dp'],
         minDist = config['minDist'],
         param1 = config['param1'],

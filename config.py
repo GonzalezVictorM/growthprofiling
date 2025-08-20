@@ -1,6 +1,9 @@
 import os
 import csv
 
+# ---- System settings ----
+THREADS = os.cpu_count() or 1  # Use all available cores, default to 1 if not available
+
 # ---- Tesseract Configuration ----
 TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 TESSERACT_LANG = 'eng'
@@ -16,10 +19,10 @@ CROP_PERCENTAGE = 0.12  # Top/bottom crop % for label detection
 # ---- Circle detection settings ----
 CIRCLE_DETECTION_CONFIG = {
     'dp': 1.5, # old 1
-    'minDist': 200,
+    'minDist': 500, # old 200
     'param1': 100,
-    'param2': 40, # old 30
-    'minRadius': 950, # old 1000
+    'param2': 40, # old 30, 50
+    'minRadius': 1100, # old 1000, 950
     'maxRadius': 1500 # old 0
 }
 
