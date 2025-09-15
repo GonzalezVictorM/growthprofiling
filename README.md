@@ -4,17 +4,18 @@ This tool processes a batch of growth profiling images, converting them to TIFF,
 
 When a `rename_matrix.csv` is provided, images are renamed based on the specified labels. If no rename matrix exists, the tool uses Tesseract OCR to automatically extract and clean text from the top and bottom labels of the pictures to rename the files.
 
-***
+---
 
 ## Features
 
-* **Batch conversion**: Converts various image formats to `.tiff`.
-* **Renaming**: Renames images using a provided `rename_matrix.csv` or through OCR.
-* **Automated cropping**: Crops the petri dish from the image for figure preparation.
-* **Multithreaded processing**: Automatically uses all available CPU cores for fast batch processing. You can override the number of threads in `config.py`.
-* **Publishable figure creation**: Easily generate grid figures from cropped images, with customizable axis labels and layout, ready for publication.
+- **Batch conversion**: Converts various image formats to `.tiff`.
+- **Renaming**: Renames images using a provided `rename_matrix.csv` or through OCR.
+- **Automated cropping**: Crops the petri dish from the image for figure preparation.
+- **Multithreaded processing**: Uses all available CPU cores by default for fast batch processing. You can override the number of threads with a command-line argument.
+- **Fast circle detection**: Detects plate circles on JPEGs for speed, then applies coordinates to original TIFFs.
+- **Publishable figure creation**: Generate grid figures from cropped images, with customizable axis labels and layout, ready for publication.
 
-***
+---
 
 ## Usage
 
@@ -50,12 +51,14 @@ When a `rename_matrix.csv` is provided, images are renamed based on the specifie
 
 5. **(Optional) Provide a Rename Matrix**: 
 
-    If you want to rename your images using a predefined list, create or edit the `local_data/rename_matrix.csv` file. The file needs to include a column `old_name` with the file names without the extension (e.g. `IMG_4469.HEIC` → `IMG_4469`) and a column `new_name` (e.g. `strainA_substrateB_ndays`) The tool will use this file to rename images, ignoring the OCR step.
+    If you want to rename your images using a predefined list, create or edit the `local_data/rename_matrix_example.csv` file and rename as `local_data/rename_matrix.csv`. The file needs to include a column `old_name` with the file names without the extension (e.g. `IMG_4469.HEIC` → `IMG_4469`) and a column `new_name` (e.g. `strainA_substrateB_ndays`) The tool will use this file to rename images, ignoring the OCR step.
 
 6.  **Run the picture processing tool**:
 
+    You can run the batch processor using all available CPU cores (default), or specify the number of threads:
+
     ```bash
-    python process_pictures.py
+    python process_pictures.py --max-workers 8
     ```
     The script will process the images and save the output in the following directories:
     
@@ -103,16 +106,23 @@ You can adjust various settings by editing `config.py`. These settings include f
 
 ```
 project_root/  
-├── main.py                     # The main script to run
+├── process_pictures.py         # Batch processing with multithreading
+├── generate_figure.py          # Interactive figure creation
 ├── config.py                   # Configuration settings for the tool
 ├── requirements.txt            # List of Python dependencies
 ├── utils/                      # Helper scripts
 │   ├── image_utils.py          # Functions for image processing
-│   └── ocr_utils.py            # Functions for OCR operations
+│   ├── ocr_utils.py            # Functions for OCR operations
+│   └── figure_utils.py         # Functions for figure creation
 ├── local_data/                 # All data and output files are stored here
 │   ├── rename_matrix.csv       # (Optional) CSV file for renaming images
+│   ├── rename_matrix_example.csv # Example CSV for reference
 │   ├── raw_pictures/           # Place your input images here
 │   ├── converted_pictures/     # Intermediate TIFF files are saved here
-│   ├── renamed_pictures/       # Renamed TIFF files are saved here
+│   ├── renamed_pictures/       # Renamed TIFF files are saved here (empty except for .gitkeep)
 │   └── cropped_pictures/       # Final, cropped images are saved here
 ```
+
+## Contact
+
+For questions or contributions, please open an issue or pull request on GitHub.
