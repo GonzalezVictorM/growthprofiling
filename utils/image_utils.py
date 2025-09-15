@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from PIL import Image
+import pillow_heif
 import cv2
 from config import DEFAULT_OUTPUT_EXT, CROP_PERCENTAGE
 
@@ -24,7 +25,15 @@ def convert_to_tiff(input_path, output_dir, output_ext=DEFAULT_OUTPUT_EXT):
         return output_path
 
     try:
-        img = Image.open(input_path)
+        if ext == '.heic':
+            heif_file = pillow_heif.read_heif(input_path)
+            img = Image.frombytes(heif_file.mode, heif_file.size, heif_file.data, "raw")
+        else:
+            img = Image.open(input_path)
+        
+        if img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
+
         img.save(output_path)
         return output_path
     except Exception as e:

@@ -18,12 +18,12 @@ CROP_PERCENTAGE = 0.12  # Top/bottom crop % for label detection
 
 # ---- Circle detection settings ----
 CIRCLE_DETECTION_CONFIG = {
-    'dp': 1.5, # old 1
-    'minDist': 500, # old 200
+    'dp': 1.5,
+    'minDist': 125, # old 500
     'param1': 100,
-    'param2': 40, # old 30, 50
-    'minRadius': 1100, # old 1000, 950
-    'maxRadius': 1500 # old 0
+    'param2': 40,
+    'minRadius': 275, # old 1100
+    'maxRadius': 375 # old 1500
 }
 
 # ---- Paths ----
