@@ -65,9 +65,10 @@ def detect_plate_circle(image, config):
     """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.equalizeHist(gray)
-    blurred = cv2.GaussianBlur(gray, (9, 9), 2)
+    blurred = cv2.GaussianBlur(gray, (5,5), 2)
+    edges = cv2.Canny(blurred, 50, 150)
     circles = cv2.HoughCircles(
-        blurred, cv2.HOUGH_GRADIENT,
+        edges, cv2.HOUGH_GRADIENT,
         dp=config['dp'],
         minDist=config['minDist'],
         param1=config['param1'],
@@ -91,7 +92,14 @@ def detect_plate_circle_fast(tiff_path, config, jpeg_resize_factor=0.25):
     img_pil_small = img_pil.resize(new_size, Image.LANCZOS)
     img_jpeg = np.array(img_pil_small.convert('RGB'))
     img_jpeg = cv2.cvtColor(img_jpeg, cv2.COLOR_RGB2BGR)
-    circle = detect_plate_circle(img_jpeg, config)
+
+    # Scale circle detection parameters based on resize factor
+    scaled_config = config.copy()
+    for key in ['minDist', 'minRadius', 'maxRadius']:
+        if key in scaled_config:
+            scaled_config[key] = max(1, int(scaled_config[key] * jpeg_resize_factor))
+
+    circle = detect_plate_circle(img_jpeg, scaled_config)
     if circle is not None:
         x, y, r = circle
         scale = 1.0 / jpeg_resize_factor
